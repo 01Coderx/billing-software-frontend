@@ -30,7 +30,7 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
       const body = await response.json();
       message = body.message || body.error || message;
     } catch {
-      // Retain generic message
+      // Fall back to HTTP status message
     }
     throw new Error(message);
   }
@@ -47,10 +47,11 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return response.json() as Promise<T>;
 }
 
-// Structured Nested API Object
 export const api = {
   customers: {
+    list: () => request<Customer[]>("/api/customers"),
     getAll: () => request<Customer[]>("/api/customers"),
+    get: (id: string | number) => request<Customer>(`/api/customers/${id}`),
     getById: (id: string | number) => request<Customer>(`/api/customers/${id}`),
     create: (data: Partial<Customer>) =>
       request<Customer>("/api/customers", {
@@ -62,12 +63,16 @@ export const api = {
         method: "PUT",
         body: JSON.stringify(data),
       }),
+    remove: (id: string | number) =>
+      request<void>(`/api/customers/${id}`, { method: "DELETE" }),
     delete: (id: string | number) =>
       request<void>(`/api/customers/${id}`, { method: "DELETE" }),
   },
 
   products: {
+    list: () => request<Product[]>("/api/products"),
     getAll: () => request<Product[]>("/api/products"),
+    get: (id: string | number) => request<Product>(`/api/products/${id}`),
     getById: (id: string | number) => request<Product>(`/api/products/${id}`),
     create: (data: Partial<Product>) =>
       request<Product>("/api/products", {
@@ -79,12 +84,16 @@ export const api = {
         method: "PUT",
         body: JSON.stringify(data),
       }),
+    remove: (id: string | number) =>
+      request<void>(`/api/products/${id}`, { method: "DELETE" }),
     delete: (id: string | number) =>
       request<void>(`/api/products/${id}`, { method: "DELETE" }),
   },
 
   invoices: {
+    list: () => request<Invoice[]>("/api/invoices"),
     getAll: () => request<Invoice[]>("/api/invoices"),
+    get: (id: string | number) => request<Invoice>(`/api/invoices/${id}`),
     getById: (id: string | number) => request<Invoice>(`/api/invoices/${id}`),
     create: (data: InvoiceDraft) =>
       request<Invoice>("/api/invoices", {
@@ -96,8 +105,12 @@ export const api = {
         method: "PUT",
         body: JSON.stringify(data),
       }),
+    remove: (id: string | number) =>
+      request<void>(`/api/invoices/${id}`, { method: "DELETE" }),
     delete: (id: string | number) =>
       request<void>(`/api/invoices/${id}`, { method: "DELETE" }),
+    pdf: (id: string | number) =>
+      request<Blob>(`/api/invoices/${id}/pdf`),
     downloadPdf: (id: string | number) =>
       request<Blob>(`/api/invoices/${id}/pdf`),
   },
