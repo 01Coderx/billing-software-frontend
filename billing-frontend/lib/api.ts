@@ -1,7 +1,10 @@
 import type { Customer, Invoice, InvoiceDraft, Product } from "@/types/billing";
 
+const API_BASE_URL =
+  process.env.NEXT_API_URL || "http://localhost:8000";
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(path, {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
     ...init,
     headers: {
       Accept: "application/json",
