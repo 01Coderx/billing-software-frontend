@@ -1,6 +1,6 @@
 import type { NextConfig } from "next";
 
-const backendUrl = "https://billing-software-backend-ykg4.onrender.com" || "http://localhost:8000";
+const backendUrl = "https://billing-software-backend-ykg4.onrender.com";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
