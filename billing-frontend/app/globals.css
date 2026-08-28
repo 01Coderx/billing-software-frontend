@@ -1,0 +1,88 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f6f8fb;
+  --foreground: #0b1220;
+  --card: #ffffff;
+  --muted: #667085;
+  --border: #e6eaf0;
+  --primary: #2563eb;
+  --primary-foreground: #ffffff;
+  --sidebar: #0b1220;
+  --sidebar-muted: #94a3b8;
+  --success: #0f9f6e;
+  --warning: #d97706;
+  --danger: #dc2626;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+button, input, textarea, select { font: inherit; }
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 999px; }
+::-webkit-scrollbar-track { background: transparent; }
+
+.card {
+  border: 1px solid var(--border);
+  background: var(--card);
+  border-radius: 18px;
+  box-shadow: 0 8px 32px rgba(15,23,42,0.045);
+}
+
+.input {
+  width: 100%;
+  border: 1px solid #d8dee8;
+  border-radius: 12px;
+  background: white;
+  padding: 11px 13px;
+  outline: none;
+  transition: .18s ease;
+}
+.input:focus { border-color: #93c5fd; box-shadow: 0 0 0 4px rgba(37,99,235,.08); }
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 11px;
+  border: 1px solid transparent;
+  padding: 10px 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: .18s ease;
+}
+.btn-primary { background: #2563eb; color: white; }
+.btn-primary:hover { background: #1d4ed8; transform: translateY(-1px); }
+.btn-secondary { background: white; color: #1e293b; border-color: #d8dee8; }
+.btn-secondary:hover { background: #f8fafc; }
+.btn-danger { background: #fff1f2; color: #be123c; border-color: #fecdd3; }
+.btn-ghost { background: transparent; color: #475569; }
+.btn-ghost:hover { background: #f1f5f9; }
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 5px 9px;
+  font-size: 12px;
+  font-weight: 800;
+}
+.badge-draft { background: #eef2ff; color: #4338ca; }
+.badge-paid { background: #ecfdf3; color: #047857; }
+.badge-sent { background: #eff6ff; color: #1d4ed8; }
+.badge-cancelled { background: #fff1f2; color: #be123c; }
+
+.fade-in { animation: fadeIn .24s ease-out; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(4px);} to {opacity: 1; transform:none;} }
+
+@media (max-width: 900px) {
+  .desktop-only { display: none !important; }
+}
