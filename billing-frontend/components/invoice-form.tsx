@@ -160,9 +160,9 @@ export default function InvoiceForm({ mode, initialInvoice, onSaved }: Props) {
       // Translate our clean frontend draft into the entity-shaped Spring Boot request.
 
       const invoice =
-        mode === "create"
-          ? await api.invoices.create(backendPayload)
-          : await api.invoices.update(initialInvoice!.id, backendPayload);
+  mode === "create"
+    ? await api.invoices.create(payload)
+    : await api.invoices.update(initialInvoice!.id, payload);
 
       onSaved(invoice);
     } catch (e) {
