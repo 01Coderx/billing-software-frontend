@@ -30,7 +30,7 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
       const body = await response.json();
       message = body.message || body.error || message;
     } catch {
-      // Retain generic status message if parsing fails
+      // Retain generic message
     }
     throw new Error(message);
   }
@@ -47,34 +47,58 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return response.json() as Promise<T>;
 }
 
-// Exported API Methods
+// Structured Nested API Object
 export const api = {
-  // Customers
-  getCustomers: () => request<Customer[]>("/api/customers"),
-  getCustomer: (id: string | number) => request<Customer>(`/api/customers/${id}`),
-  createCustomer: (data: Partial<Customer>) =>
-    request<Customer>("/api/customers", {
-      method: "POST",
-      body: JSON.stringify(data),
-    }),
+  customers: {
+    getAll: () => request<Customer[]>("/api/customers"),
+    getById: (id: string | number) => request<Customer>(`/api/customers/${id}`),
+    create: (data: Partial<Customer>) =>
+      request<Customer>("/api/customers", {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+    update: (id: string | number, data: Partial<Customer>) =>
+      request<Customer>(`/api/customers/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(data),
+      }),
+    delete: (id: string | number) =>
+      request<void>(`/api/customers/${id}`, { method: "DELETE" }),
+  },
 
-  // Products
-  getProducts: () => request<Product[]>("/api/products"),
-  getProduct: (id: string | number) => request<Product>(`/api/products/${id}`),
-  createProduct: (data: Partial<Product>) =>
-    request<Product>("/api/products", {
-      method: "POST",
-      body: JSON.stringify(data),
-    }),
+  products: {
+    getAll: () => request<Product[]>("/api/products"),
+    getById: (id: string | number) => request<Product>(`/api/products/${id}`),
+    create: (data: Partial<Product>) =>
+      request<Product>("/api/products", {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+    update: (id: string | number, data: Partial<Product>) =>
+      request<Product>(`/api/products/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(data),
+      }),
+    delete: (id: string | number) =>
+      request<void>(`/api/products/${id}`, { method: "DELETE" }),
+  },
 
-  // Invoices
-  getInvoices: () => request<Invoice[]>("/api/invoices"),
-  getInvoice: (id: string | number) => request<Invoice>(`/api/invoices/${id}`),
-  createInvoice: (data: InvoiceDraft) =>
-    request<Invoice>("/api/invoices", {
-      method: "POST",
-      body: JSON.stringify(data),
-    }),
-  downloadInvoicePdf: (id: string | number) =>
-    request<Blob>(`/api/invoices/${id}/pdf`),
+  invoices: {
+    getAll: () => request<Invoice[]>("/api/invoices"),
+    getById: (id: string | number) => request<Invoice>(`/api/invoices/${id}`),
+    create: (data: InvoiceDraft) =>
+      request<Invoice>("/api/invoices", {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+    update: (id: string | number, data: Partial<InvoiceDraft>) =>
+      request<Invoice>(`/api/invoices/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(data),
+      }),
+    delete: (id: string | number) =>
+      request<void>(`/api/invoices/${id}`, { method: "DELETE" }),
+    downloadPdf: (id: string | number) =>
+      request<Blob>(`/api/invoices/${id}/pdf`),
+  },
 };
