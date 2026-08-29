@@ -10,7 +10,6 @@ import {
   Check,
   FileText,
   Minus,
-  Plus,
   Trash2,
   UserRound,
 } from "lucide-react";
@@ -473,14 +472,7 @@ function addProduct(product: Product) {
   <ProductPicker products={products} onSelect={addProduct} />
 </div>
 
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={addProduct}
-                >
-                  <Plus size={16} />
-                  Add
-                </Button>
+               
               </div>
             </div>
 
