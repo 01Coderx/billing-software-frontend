@@ -412,49 +412,7 @@ function addProduct(product: Product) {
   </label>
 </div>
 
-              <label className="block text-sm font-bold">
-                Bill date
-
-                <input
-                  className="input mt-1.5"
-                  type="date"
-                  value={dueDate}
-                  onChange={(e) =>
-                    setDueDate(e.target.value)
-                  }
-                />
-              </label>
-
-              <label className="block text-sm font-bold">
-                Status
-
-                <select
-                  className="input mt-1.5"
-                  value={status}
-                  onChange={(e) =>
-                    setStatus(e.target.value)
-                  }
-                >
-                  <option value="DRAFT">
-                    DRAFT
-                  </option>
-
-                  <option value="SENT">
-                    SENT
-                  </option>
-
-                  <option value="PAID">
-                    PAID
-                  </option>
-
-                  <option value="CANCELLED">
-                    CANCELLED
-                  </option>
-                </select>
-              </label>
-            </div>
-          </div>
-
+            
           <div className="card overflow-hidden">
             <div className="flex flex-col gap-3 border-b border-slate-100 p-5 sm:flex-row sm:items-center">
               <div>
