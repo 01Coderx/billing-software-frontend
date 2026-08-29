@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { CustomerPicker } from "@/components/customer-picker";
+import { ProductPicker } from "@/components/product-picker";
 import {
   ArrowLeft,
   Boxes,
@@ -91,7 +93,6 @@ export default function InvoiceForm({
     initialInvoice ? buildLines(initialInvoice) : [],
   );
 
-  const [productId, setProductId] = useState("");
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -135,46 +136,18 @@ export default function InvoiceForm({
       Number(discount || 0),
   );
 
-  function addProduct() {
-    const product = products.find(
-      (item) => String(item.id) === productId,
-    );
-
-    if (!product?.id) return;
-
-    setLines((current) => {
-      const found = current.find(
-        (line) => line.product.id === product.id,
+function addProduct(product: Product) {
+  if (!product?.id) return;
+  setLines((current) => {
+    const found = current.find((line) => line.product.id === product.id);
+    if (found) {
+      return current.map((line) =>
+        line.product.id === product.id ? { ...line, quantity: line.quantity + 1 } : line,
       );
-
-      if (found) {
-        return current.map((line) =>
-          line.product.id === product.id
-            ? {
-                ...line,
-
-                // Adding an already selected product increases
-                // quantity by 0.1 instead of 1.
-                quantity: Number(
-                  (line.quantity + 0.1).toFixed(2),
-                ),
-              }
-            : line,
-        );
-      }
-
-      return [
-        ...current,
-        {
-          product,
-          rate: Number(product.price || 0),
-          quantity: 1,
-        },
-      ];
-    });
-
-    setProductId("");
-  }
+    }
+    return [...current, { product, rate: Number(product.price || 0), quantity: 1 }];
+  });
+}
 
   function changeQty(id: number, delta: number) {
     setLines((current) =>
@@ -403,30 +376,11 @@ export default function InvoiceForm({
             <div className="grid gap-4 sm:grid-cols-3">
               <label className="block text-sm font-bold">
                 Customer
-
-                <select
-                  className="input mt-1.5"
-                  value={customerId}
-                  onChange={(e) =>
-                    setCustomerId(e.target.value)
-                  }
-                >
-                  <option value="">
-                    Walk-in customer
-                  </option>
-
-                  {customers.map((customer) => (
-                    <option
-                      key={customer.id}
-                      value={customer.id}
-                    >
-                      {customer.name}
-                      {customer.phone
-                        ? ` — ${customer.phone}`
-                        : ""}
-                    </option>
-                  ))}
-                </select>
+<div className="grid items-start gap-4 sm:grid-cols-3">
+  <label className="block text-sm font-bold">
+    Customer
+    <CustomerPicker customers={customers} value={customerId} onChange={setCustomerId} />
+  </label>
               </label>
 
               <label className="block text-sm font-bold">
@@ -486,27 +440,9 @@ export default function InvoiceForm({
               </div>
 
               <div className="ml-auto flex w-full gap-2 sm:w-auto">
-                <select
-                  className="input min-w-0 sm:w-64"
-                  value={productId}
-                  onChange={(e) =>
-                    setProductId(e.target.value)
-                  }
-                >
-                  <option value="">
-                    Select product…
-                  </option>
-
-                  {products.map((product) => (
-                    <option
-                      key={product.id}
-                      value={product.id}
-                    >
-                      {product.name} ·{" "}
-                      {formatCurrency(product.price)}
-                    </option>
-                  ))}
-                </select>
+                <div className="ml-auto w-full sm:w-auto">
+  <ProductPicker products={products} onSelect={addProduct} />
+</div>
 
                 <Button
                   type="button"
