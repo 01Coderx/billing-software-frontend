@@ -222,11 +222,18 @@ export default function InvoiceForm({ mode, initialInvoice, onSaved }: Props) {
             <div className="grid gap-4 sm:grid-cols-3">
               <label className="block text-sm font-bold">
                 Customer
-                <select
+                {/* <select
                   className="input mt-1.5"
                   value={customerId}
                   onChange={(e) => setCustomerId(e.target.value)}
-                >
+                > */}
+
+                <input
+  className="input"
+  placeholder="Search customer..."
+  value={customerSearch}
+  onChange={(e) => setCustomerSearch(e.target.value)}
+/>
                   <option value="">Walk-in customer</option>
                   {customers.map((customer) => (
                     <option key={customer.id} value={customer.id}>
