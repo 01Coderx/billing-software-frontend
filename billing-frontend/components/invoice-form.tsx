@@ -7,10 +7,10 @@ import { ProductPicker } from "@/components/product-picker";
 import {
   ArrowLeft,
   Boxes,
-  Plus,
-  Minus,
   Check,
   FileText,
+  Minus,
+  Plus,
   Trash2,
   UserRound,
 } from "lucide-react";
@@ -37,14 +37,24 @@ type Props = {
   onSaved: (invoice: Invoice) => void;
 };
 
+const MIN_QTY = 0.01;
+const QTY_STEP = 0.1;
+
 function toDateInput(value?: string | null) {
   if (!value) return "";
 
   const date = new Date(value);
-
   if (Number.isNaN(date.getTime())) return "";
 
   return date.toISOString().slice(0, 10);
+}
+
+function normalizeQuantity(value: unknown) {
+  const quantity = Number(value);
+
+  if (!Number.isFinite(quantity)) return MIN_QTY;
+
+  return Math.max(MIN_QTY, Number(quantity.toFixed(2)));
 }
 
 function buildLines(invoice: Invoice): Line[] {
@@ -52,10 +62,8 @@ function buildLines(invoice: Invoice): Line[] {
     .filter((item) => item.product?.id)
     .map((item) => ({
       product: item.product,
-      rate: Number(item.rate ?? item.product.price ?? 0),
-
-      // Allow decimal quantities such as 0.1, 0.25, 0.5, etc.
-      quantity: Math.max(0.01, Number(item.quantity ?? 1)),
+      rate: Math.max(0, Number(item.rate ?? item.product.price ?? 0) || 0),
+      quantity: normalizeQuantity(item.quantity ?? 1),
     }));
 }
 
@@ -68,62 +76,53 @@ export default function InvoiceForm({
   const [customers, setCustomers] = useState<Customer[]>([]);
 
   const [customerId, setCustomerId] = useState(
-    initialInvoice?.customer?.id
-      ? String(initialInvoice.customer.id)
-      : "",
+    initialInvoice?.customer?.id ? String(initialInvoice.customer.id) : "",
   );
-
   const [dueDate, setDueDate] = useState(
     toDateInput(initialInvoice?.dueDate),
   );
-
-  const [status, setStatus] = useState(
-    initialInvoice?.status || "PAID",
-  );
-
-  const [tax, setTax] = useState(
-    Number(initialInvoice?.tax || 0),
-  );
-
+  const [status, setStatus] = useState(initialInvoice?.status || "PAID");
+  const [tax, setTax] = useState(Number(initialInvoice?.tax || 0));
   const [discount, setDiscount] = useState(
     Number(initialInvoice?.discount || 0),
   );
-
   const [lines, setLines] = useState<Line[]>(
     initialInvoice ? buildLines(initialInvoice) : [],
   );
-
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    Promise.all([
-      api.products.list(),
-      api.customers.list(),
-    ])
+    let active = true;
+
+    Promise.all([api.products.list(), api.customers.list()])
       .then(([productData, customerData]) => {
+        if (!active) return;
         setProducts(productData);
         setCustomers(customerData);
       })
-      .catch((e) =>
+      .catch((e) => {
+        if (!active) return;
         setError(
-          e instanceof Error
-            ? e.message
-            : "Could not load invoice data",
-        ),
-      )
-      .finally(() => setLoading(false));
+          e instanceof Error ? e.message : "Could not load invoice data",
+        );
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   const subtotal = useMemo(
     () =>
       lines.reduce(
         (sum, line) =>
-          sum +
-          Number(line.rate || 0) *
-            Number(line.quantity || 0),
+          sum + Number(line.rate || 0) * Number(line.quantity || 0),
         0,
       ),
     [lines],
@@ -131,23 +130,34 @@ export default function InvoiceForm({
 
   const total = Math.max(
     0,
-    subtotal +
-      Number(tax || 0) -
-      Number(discount || 0),
+    subtotal + Number(tax || 0) - Number(discount || 0),
   );
 
-function addProduct(product: Product) {
-  if (!product?.id) return;
-  setLines((current) => {
-    const found = current.find((line) => line.product.id === product.id);
-    if (found) {
-      return current.map((line) =>
-        line.product.id === product.id ? { ...line, quantity: line.quantity + 1 } : line,
-      );
-    }
-    return [...current, { product, rate: Number(product.price || 0), quantity: 1 }];
-  });
-}
+  function addProduct(product: Product) {
+    if (!product?.id) return;
+
+    setError("");
+    setLines((current) => {
+      const found = current.find((line) => line.product.id === product.id);
+
+      if (found) {
+        return current.map((line) =>
+          line.product.id === product.id
+            ? { ...line, quantity: normalizeQuantity(line.quantity + 1) }
+            : line,
+        );
+      }
+
+      return [
+        ...current,
+        {
+          product,
+          rate: Math.max(0, Number(product.price || 0) || 0),
+          quantity: 1,
+        },
+      ];
+    });
+  }
 
   function changeQty(id: number, delta: number) {
     setLines((current) =>
@@ -155,72 +165,37 @@ function addProduct(product: Product) {
         line.product.id === id
           ? {
               ...line,
-
-              // Minimum quantity is 0.01.
-              // Decimal quantities are fully supported.
-              quantity: Math.max(
-                0.01,
-                Number(
-                  (line.quantity + delta).toFixed(2),
-                ),
-              ),
+              quantity: normalizeQuantity(line.quantity + delta),
             }
           : line,
       ),
     );
   }
 
-  function changeQuantityInput(
-    id: number,
-    value: string,
-  ) {
-    if (value === "") {
-      setLines((current) =>
-        current.map((line) =>
-          line.product.id === id
-            ? {
-                ...line,
-                quantity: 0.01,
-              }
-            : line,
-        ),
-      );
-
-      return;
-    }
+  function changeQuantityInput(id: number, value: string) {
+    // Let the input temporarily be empty while the user edits it.
+    if (value === "") return;
 
     const quantity = Number(value);
-
     if (!Number.isFinite(quantity)) return;
 
     setLines((current) =>
       current.map((line) =>
         line.product.id === id
-          ? {
-              ...line,
-              quantity: Math.max(
-                0.01,
-                Number(quantity.toFixed(2)),
-              ),
-            }
+          ? { ...line, quantity: normalizeQuantity(quantity) }
           : line,
       ),
     );
   }
 
   function changeRate(id: number, value: string) {
-    const rate = Math.max(
-      0,
-      Number(value) || 0,
-    );
+    const rate = Number(value);
+    if (!Number.isFinite(rate)) return;
 
     setLines((current) =>
       current.map((line) =>
         line.product.id === id
-          ? {
-              ...line,
-              rate,
-            }
+          ? { ...line, rate: Math.max(0, Number(rate.toFixed(2))) }
           : line,
       ),
     );
@@ -228,16 +203,13 @@ function addProduct(product: Product) {
 
   function removeLine(id: number) {
     setLines((current) =>
-      current.filter(
-        (line) => line.product.id !== id,
-      ),
+      current.filter((line) => line.product.id !== id),
     );
   }
 
-  async function submit(
-    event: React.FormEvent<HTMLFormElement>,
-  ) {
+  async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setError("");
 
     if (!lines.length) {
       setError("Add at least one product.");
@@ -246,62 +218,31 @@ function addProduct(product: Product) {
 
     const payload: InvoiceDraft = {
       dueDate: dueDate
-        ? new Date(
-            `${dueDate}T00:00:00`,
-          ).toISOString()
+        ? new Date(`${dueDate}T00:00:00`).toISOString()
         : null,
-
-      customer: customerId
-        ? {
-            id: Number(customerId),
-          }
-        : null,
-
-      tax: Math.max(
-        0,
-        Number(tax) || 0,
-      ),
-
-      discount: Math.max(
-        0,
-        Number(discount) || 0,
-      ),
-
+      customer: customerId ? { id: Number(customerId) } : null,
+      tax: Math.max(0, Number(tax) || 0),
+      discount: Math.max(0, Number(discount) || 0),
       status,
-
       items: lines.map((line) => ({
         productId: Number(line.product.id),
-
-        rate: Number(line.rate || 0),
-
-        // IMPORTANT:
-        // Do not use Math.max(1, ...).
-        // That would convert 0.1 / 0.25 / 0.5 back to 1.
-        quantity: Math.max(
-          0.01,
-          Number(line.quantity || 0.01),
-        ),
+        rate: Math.max(0, Number(line.rate || 0)),
+        quantity: normalizeQuantity(line.quantity),
       })),
     };
 
     setSaving(true);
-    setError("");
 
     try {
       const invoice =
         mode === "create"
           ? await api.invoices.create(payload)
-          : await api.invoices.update(
-              initialInvoice!.id,
-              payload,
-            );
+          : await api.invoices.update(initialInvoice!.id, payload);
 
       onSaved(invoice);
     } catch (e) {
       setError(
-        e instanceof Error
-          ? e.message
-          : "Could not save invoice",
+        e instanceof Error ? e.message : "Could not save invoice",
       );
     } finally {
       setSaving(false);
@@ -328,20 +269,13 @@ function addProduct(product: Product) {
           className="inline-flex items-center gap-2 text-sm font-bold text-slate-500 hover:text-slate-900"
         >
           <ArrowLeft size={16} />
-
-          {mode === "edit"
-            ? "Back to bill"
-            : "Back to invoices"}
+          {mode === "edit" ? "Back to bill" : "Back to invoices"}
         </Link>
       </div>
 
       <PageHeader
         eyebrow="Sales"
-        title={
-          mode === "create"
-            ? "Create bill"
-            : "Update bill"
-        }
+        title={mode === "create" ? "Create bill" : "Update bill"}
         description="Choose the customer, set the selling rate for every item, and save the bill."
       />
 
@@ -351,7 +285,10 @@ function addProduct(product: Product) {
         </div>
       )}
 
-     <form onSubmit={submit} className="grid items-start gap-5 xl:grid-cols-[1fr_380px]">
+      <form
+        onSubmit={submit}
+        className="grid items-start gap-5 xl:grid-cols-[1fr_380px]"
+      >
         <section className="space-y-5">
           <div className="card p-5">
             <div className="mb-5 flex items-center gap-3">
@@ -360,15 +297,21 @@ function addProduct(product: Product) {
               </div>
               <div>
                 <h2 className="font-black">Billing details</h2>
-                <p className="text-xs text-slate-500">Attach the bill to a customer.</p>
+                <p className="text-xs text-slate-500">
+                  Attach the bill to a customer.
+                </p>
               </div>
             </div>
 
-          <div className="grid items-start gap-4 sm:grid-cols-3">
-  <label className="block text-sm font-bold">
-    Customer
-    <CustomerPicker customers={customers} value={customerId} onChange={setCustomerId} />
-  </label>
+            <div className="grid items-start gap-4 sm:grid-cols-3">
+              <label className="block text-sm font-bold">
+                Customer
+                <CustomerPicker
+                  customers={customers}
+                  value={customerId}
+                  onChange={setCustomerId}
+                />
+              </label>
 
               <label className="block text-sm font-bold">
                 Bill date
@@ -396,41 +339,30 @@ function addProduct(product: Product) {
             </div>
           </div>
 
-            
           <div className="card overflow-hidden">
             <div className="flex flex-col gap-3 border-b border-slate-100 p-5 sm:flex-row sm:items-center">
               <div>
-                <h2 className="font-black">
-                  Bill items
-                </h2>
-
+                <h2 className="font-black">Bill items</h2>
                 <p className="text-xs text-slate-500">
-                  Rate is the selling price charged on
-                  this bill.
+                  Rate is the selling price charged on this bill.
                 </p>
               </div>
 
-              <div className="ml-auto flex w-full gap-2 sm:w-auto">
-                <div className="ml-auto w-full sm:w-auto">
-  <ProductPicker products={products} onSelect={addProduct} />
-</div>
-
-               
+              <div className="ml-auto w-full sm:w-auto">
+                <ProductPicker products={products} onSelect={addProduct} />
               </div>
             </div>
 
             <div className="divide-y divide-slate-100">
               {lines.map((line) => {
                 const id = line.product.id!;
-
                 const amount =
-                  Number(line.rate || 0) *
-                  Number(line.quantity || 0);
+                  Number(line.rate || 0) * Number(line.quantity || 0);
 
                 return (
                   <div
                     key={id}
-                    className="grid gap-3 p-5 md:grid-cols-[1fr_130px_155px_120px_40px] md:items-center"
+                    className="grid gap-3 p-5 md:grid-cols-[1fr_130px_170px_120px_40px] md:items-center"
                   >
                     <div className="flex min-w-0 items-center gap-3">
                       <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-slate-100 text-slate-600">
@@ -441,32 +373,21 @@ function addProduct(product: Product) {
                         <div className="truncate font-bold">
                           {line.product.name}
                         </div>
-
                         <div className="truncate text-xs text-slate-500">
-                          {line.product.sku} · Catalogue
-                          price{" "}
-                          {formatCurrency(
-                            line.product.price,
-                          )}
+                          {line.product.sku} · Catalogue price {formatCurrency(line.product.price)}
                         </div>
                       </div>
                     </div>
 
                     <label className="text-xs font-bold text-slate-500">
                       Rate
-
                       <input
                         className="input mt-1"
                         type="number"
                         min="0"
                         step="0.01"
                         value={line.rate}
-                        onChange={(e) =>
-                          changeRate(
-                            id,
-                            e.target.value,
-                          )
-                        }
+                        onChange={(e) => changeRate(id, e.target.value)}
                       />
                     </label>
 
@@ -478,10 +399,9 @@ function addProduct(product: Product) {
                       <div className="mt-1 flex items-center gap-2">
                         <button
                           type="button"
-                          className="grid size-9 place-items-center rounded-lg border border-slate-200"
-                          onClick={() =>
-                            changeQty(id, -0.1)
-                          }
+                          className="grid size-9 shrink-0 place-items-center rounded-lg border border-slate-200 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+                          onClick={() => changeQty(id, -QTY_STEP)}
+                          disabled={line.quantity <= MIN_QTY}
                           aria-label={`Decrease quantity for ${line.product.name}`}
                         >
                           <Minus size={15} />
@@ -489,25 +409,20 @@ function addProduct(product: Product) {
 
                         <input
                           type="number"
-                          min="0.01"
+                          min={MIN_QTY}
                           step="0.01"
                           value={line.quantity}
                           className="input w-20 text-center font-black"
                           onChange={(e) =>
-                            changeQuantityInput(
-                              id,
-                              e.target.value,
-                            )
+                            changeQuantityInput(id, e.target.value)
                           }
                           aria-label={`Quantity for ${line.product.name}`}
                         />
 
                         <button
                           type="button"
-                          className="grid size-9 place-items-center rounded-lg border border-slate-200"
-                          onClick={() =>
-                            changeQty(id, 0.1)
-                          }
+                          className="grid size-9 shrink-0 place-items-center rounded-lg border border-slate-200 hover:bg-slate-50"
+                          onClick={() => changeQty(id, QTY_STEP)}
                           aria-label={`Increase quantity for ${line.product.name}`}
                         >
                           <Plus size={15} />
@@ -515,7 +430,7 @@ function addProduct(product: Product) {
                       </div>
 
                       <div className="mt-1 text-[10px] text-slate-400">
-                        0.1 = 100g · 0.25 = 250g
+                        0.1 = 100g · 0.25 = 250g · 0.5 = 500g
                       </div>
                     </div>
 
@@ -523,7 +438,6 @@ function addProduct(product: Product) {
                       <div className="text-xs font-bold text-slate-500">
                         Amount
                       </div>
-
                       <div className="mt-1 font-black">
                         {formatCurrency(amount)}
                       </div>
@@ -532,9 +446,7 @@ function addProduct(product: Product) {
                     <button
                       type="button"
                       className="btn btn-ghost !p-2 text-rose-500"
-                      onClick={() =>
-                        removeLine(id)
-                      }
+                      onClick={() => removeLine(id)}
                       aria-label={`Remove ${line.product.name}`}
                     >
                       <Trash2 size={16} />
@@ -545,39 +457,30 @@ function addProduct(product: Product) {
 
               {!lines.length && (
                 <div className="p-10 text-center text-sm text-slate-400">
-                  No line items yet. Choose a product
-                  above.
+                  No line items yet. Choose a product above.
                 </div>
               )}
             </div>
           </div>
 
           <div className="card p-5">
-            <h2 className="font-black">
-              Adjustments
-            </h2>
+            <h2 className="font-black">Adjustments</h2>
 
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
               <label className="block text-sm font-bold">
                 Tax
-
                 <input
                   className="input mt-1.5"
                   type="number"
                   min="0"
                   step="0.01"
                   value={tax}
-                  onChange={(e) =>
-                    setTax(
-                      Number(e.target.value) || 0,
-                    )
-                  }
+                  onChange={(e) => setTax(Math.max(0, Number(e.target.value) || 0))}
                 />
               </label>
 
               <label className="block text-sm font-bold">
                 Discount
-
                 <input
                   className="input mt-1.5"
                   type="number"
@@ -585,9 +488,7 @@ function addProduct(product: Product) {
                   step="0.01"
                   value={discount}
                   onChange={(e) =>
-                    setDiscount(
-                      Number(e.target.value) || 0,
-                    )
+                    setDiscount(Math.max(0, Number(e.target.value) || 0))
                   }
                 />
               </label>
@@ -602,10 +503,7 @@ function addProduct(product: Product) {
             </div>
 
             <div>
-              <h2 className="font-black">
-                Bill summary
-              </h2>
-
+              <h2 className="font-black">Bill summary</h2>
               <p className="text-xs text-slate-500">
                 {mode === "create"
                   ? "Ready to save."
@@ -616,58 +514,31 @@ function addProduct(product: Product) {
 
           <div className="mt-6 space-y-3 border-b border-slate-100 pb-5">
             <div className="flex justify-between text-sm">
-              <span className="text-slate-500">
-                Items
-              </span>
-
+              <span className="text-slate-500">Items</span>
               <strong>
-                {lines.reduce(
-                  (sum, line) =>
-                    sum + Number(line.quantity || 0),
-                  0,
-                )}
+                {lines.reduce((sum, line) => sum + Number(line.quantity || 0), 0)}
               </strong>
             </div>
 
             <div className="flex justify-between text-sm">
-              <span className="text-slate-500">
-                Subtotal
-              </span>
-
-              <strong>
-                {formatCurrency(subtotal)}
-              </strong>
+              <span className="text-slate-500">Subtotal</span>
+              <strong>{formatCurrency(subtotal)}</strong>
             </div>
 
             <div className="flex justify-between text-sm">
-              <span className="text-slate-500">
-                Tax
-              </span>
-
-              <strong>
-                {formatCurrency(tax)}
-              </strong>
+              <span className="text-slate-500">Tax</span>
+              <strong>{formatCurrency(tax)}</strong>
             </div>
 
             <div className="flex justify-between text-sm">
-              <span className="text-slate-500">
-                Discount
-              </span>
-
-              <strong>
-                -{formatCurrency(discount)}
-              </strong>
+              <span className="text-slate-500">Discount</span>
+              <strong>-{formatCurrency(discount)}</strong>
             </div>
           </div>
 
           <div className="mt-5 flex items-end justify-between">
-            <span className="text-sm font-bold text-slate-500">
-              Total
-            </span>
-
-            <span className="text-2xl font-black">
-              {formatCurrency(total)}
-            </span>
+            <span className="text-sm font-bold text-slate-500">Total</span>
+            <span className="text-2xl font-black">{formatCurrency(total)}</span>
           </div>
 
           <Button
@@ -676,7 +547,6 @@ function addProduct(product: Product) {
             disabled={saving || !lines.length}
           >
             <Check size={17} />
-
             {saving
               ? "Saving…"
               : mode === "create"
@@ -685,8 +555,7 @@ function addProduct(product: Product) {
           </Button>
 
           <p className="mt-3 text-center text-[11px] leading-relaxed text-slate-400">
-            The backend recalculates subtotal, tax,
-            discount and total before saving.
+            The backend recalculates subtotal, tax, discount and total before saving.
           </p>
         </aside>
       </form>
