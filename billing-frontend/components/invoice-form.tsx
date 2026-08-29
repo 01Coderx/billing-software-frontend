@@ -7,6 +7,8 @@ import { ProductPicker } from "@/components/product-picker";
 import {
   ArrowLeft,
   Boxes,
+  Plus,
+  Minus,
   Check,
   FileText,
   Trash2,
