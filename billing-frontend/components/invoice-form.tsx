@@ -9,8 +9,6 @@ import {
   Boxes,
   Check,
   FileText,
-  Plus,
-  Minus,
   Trash2,
   UserRound,
 } from "lucide-react";
@@ -351,66 +349,50 @@ function addProduct(product: Product) {
         </div>
       )}
 
-      <form
-        onSubmit={submit}
-        className="grid items-start gap-5 xl:grid-cols-[1fr_380px]"
-      >
+     <form onSubmit={submit} className="grid items-start gap-5 xl:grid-cols-[1fr_380px]">
         <section className="space-y-5">
           <div className="card p-5">
             <div className="mb-5 flex items-center gap-3">
               <div className="grid size-10 place-items-center rounded-xl bg-blue-50 text-blue-600">
                 <UserRound size={19} />
               </div>
-
               <div>
-                <h2 className="font-black">
-                  Billing details
-                </h2>
-
-                <p className="text-xs text-slate-500">
-                  Attach the bill to a customer.
-                </p>
+                <h2 className="font-black">Billing details</h2>
+                <p className="text-xs text-slate-500">Attach the bill to a customer.</p>
               </div>
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-3">
-              <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid items-start gap-4 sm:grid-cols-3">
   <label className="block text-sm font-bold">
     Customer
-
-    <CustomerPicker
-      customers={customers}
-      value={customerId}
-      onChange={setCustomerId}
-    />
+    <CustomerPicker customers={customers} value={customerId} onChange={setCustomerId} />
   </label>
 
-  <label className="block text-sm font-bold">
-    Bill date
+              <label className="block text-sm font-bold">
+                Bill date
+                <input
+                  className="input mt-1.5"
+                  type="date"
+                  value={dueDate}
+                  onChange={(e) => setDueDate(e.target.value)}
+                />
+              </label>
 
-    <input
-      className="input mt-1.5"
-      type="date"
-      value={dueDate}
-      onChange={(e) => setDueDate(e.target.value)}
-    />
-  </label>
-
-  <label className="block text-sm font-bold">
-    Status
-
-    <select
-      className="input mt-1.5"
-      value={status}
-      onChange={(e) => setStatus(e.target.value)}
-    >
-      <option value="DRAFT">DRAFT</option>
-      <option value="SENT">SENT</option>
-      <option value="PAID">PAID</option>
-      <option value="CANCELLED">CANCELLED</option>
-    </select>
-  </label>
-</div>
+              <label className="block text-sm font-bold">
+                Status
+                <select
+                  className="input mt-1.5"
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value)}
+                >
+                  <option value="DRAFT">DRAFT</option>
+                  <option value="SENT">SENT</option>
+                  <option value="PAID">PAID</option>
+                  <option value="CANCELLED">CANCELLED</option>
+                </select>
+              </label>
+            </div>
+          </div>
 
             
           <div className="card overflow-hidden">
