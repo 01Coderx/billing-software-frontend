@@ -397,23 +397,20 @@ function addProduct(product: Product) {
           </div>
 
             
-          <div className="card overflow-hidden">
+      <div className="card overflow-hidden">
             <div className="flex flex-col gap-3 border-b border-slate-100 p-5 sm:flex-row sm:items-center">
               <div>
-                <h2 className="font-black">
-                  Bill items
-                </h2>
-
+                <h2 className="font-black">Bill items</h2>
                 <p className="text-xs text-slate-500">
-                  Rate is the selling price charged on
-                  this bill.
+                  Rate is the selling price charged on this bill.
                 </p>
               </div>
 
-              <div className="ml-auto flex w-full gap-2 sm:w-auto">
-                <div className="ml-auto w-full sm:w-auto">
+              <div className="ml-auto w-full sm:w-auto">
   <ProductPicker products={products} onSelect={addProduct} />
 </div>
+            </div>
+
 
                
               </div>
