@@ -374,14 +374,43 @@ function addProduct(product: Product) {
             </div>
 
             <div className="grid gap-4 sm:grid-cols-3">
-              <label className="block text-sm font-bold">
-                Customer
-<div className="grid items-start gap-4 sm:grid-cols-3">
+              <div className="grid gap-4 sm:grid-cols-3">
   <label className="block text-sm font-bold">
     Customer
-    <CustomerPicker customers={customers} value={customerId} onChange={setCustomerId} />
+
+    <CustomerPicker
+      customers={customers}
+      value={customerId}
+      onChange={setCustomerId}
+    />
   </label>
-              </label>
+
+  <label className="block text-sm font-bold">
+    Bill date
+
+    <input
+      className="input mt-1.5"
+      type="date"
+      value={dueDate}
+      onChange={(e) => setDueDate(e.target.value)}
+    />
+  </label>
+
+  <label className="block text-sm font-bold">
+    Status
+
+    <select
+      className="input mt-1.5"
+      value={status}
+      onChange={(e) => setStatus(e.target.value)}
+    >
+      <option value="DRAFT">DRAFT</option>
+      <option value="SENT">SENT</option>
+      <option value="PAID">PAID</option>
+      <option value="CANCELLED">CANCELLED</option>
+    </select>
+  </label>
+</div>
 
               <label className="block text-sm font-bold">
                 Bill date
