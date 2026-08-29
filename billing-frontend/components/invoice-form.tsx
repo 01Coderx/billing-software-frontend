@@ -9,6 +9,7 @@ import {
   Boxes,
   Check,
   FileText,
+  Plus,
   Minus,
   Trash2,
   UserRound,
