@@ -109,15 +109,21 @@ export default function InvoiceForm({ mode, initialInvoice, onSaved }: Props) {
     setProductId("");
   }
 
-  function changeQty(id: number, delta: number) {
-    setLines((current) =>
-      current.map((line) =>
-        line.product.id === id
-          ? { ...line, quantity: Math.max(1, line.quantity + delta) }
-          : line,
-      ),
-    );
-  }
+ function changeQty(id: number, delta: number) {
+  setLines((current) =>
+    current.map((line) =>
+      line.product.id === id
+        ? {
+            ...line,
+            quantity: Math.max(
+              0.01,
+              Number((line.quantity + delta).toFixed(2)),
+            ),
+          }
+        : line,
+    ),
+  );
+}
 
   function changeRate(id: number, value: string) {
     const rate = Math.max(0, Number(value) || 0);
@@ -326,17 +332,35 @@ export default function InvoiceForm({ mode, initialInvoice, onSaved }: Props) {
                         <button
                           type="button"
                           className="grid size-9 place-items-center rounded-lg border border-slate-200"
-                          onClick={() => changeQty(id, -1)}
+                          onClick={() => changeQty(id, -0.01)}
                         >
                           <Minus size={15} />
                         </button>
-                        <div className="grid min-w-8 place-items-center font-black">
-                          {line.quantity}
-                        </div>
+                        <input
+  type="number"
+  min="0.01"
+  step="0.01"
+  value={line.quantity}
+  className="input w-20 text-center font-black"
+  onChange={(e) => {
+    const value = Number(e.target.value);
+
+    setLines((current) =>
+      current.map((item) =>
+        item.product.id === id
+          ? {
+              ...item,
+              quantity: value > 0 ? value : 0.01,
+            }
+          : item,
+      ),
+    );
+  }}
+/>
                         <button
                           type="button"
                           className="grid size-9 place-items-center rounded-lg border border-slate-200"
-                          onClick={() => changeQty(id, 1)}
+                          onClick={() => changeQty(id, 0.01)}
                         >
                           <Plus size={15} />
                         </button>
