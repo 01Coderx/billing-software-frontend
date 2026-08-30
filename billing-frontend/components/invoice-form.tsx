@@ -529,13 +529,13 @@ export default function InvoiceForm({ mode, initialInvoice, onSaved }: Props) {
                         <Boxes size={18} />
                       </div>
                       <div className="min-w-0">
-                        <div className="truncate font-bold">
-                          {line.product.name}
-                        </div>
-                        <div className="truncate text-xs text-slate-500">
-                          {line.product.sku || "No SKU"} · Catalogue price {formatCurrency(line.product.price)}
-                        </div>
-                      </div>
+  <div className="font-bold text-wrap break-words">
+    {line.product.name}
+  </div>
+  <div className="text-xs text-slate-500 text-wrap break-words">
+    {line.product.sku || "No SKU"} · Catalogue price {formatCurrency(line.product.price)}
+  </div>
+</div>
                     </div>
 
                     <label className="text-xs font-bold text-slate-500">
