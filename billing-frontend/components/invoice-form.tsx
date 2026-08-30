@@ -41,8 +41,8 @@ function safeNumber(value: unknown, fallback = 0) {
 }
 
 function clampQuantity(value: number) {
-  if (!Number.isFinite(value)) return 0.01;
-  return Math.max(0.01, Number(value.toFixed(2)));
+  if (!Number.isFinite(value)) return 0;
+  return Math.max(0, Number(value.toFixed(2)));
 }
 
 function buildLines(invoice: Invoice): Line[] {
@@ -211,7 +211,7 @@ export default function InvoiceForm({ mode, initialInvoice, onSaved }: Props) {
         {
           product,
           rate: Math.max(0, safeNumber(product.price)),
-          quantity: 1,
+          quantity: 0,
         },
       ];
     });
@@ -235,7 +235,7 @@ export default function InvoiceForm({ mode, initialInvoice, onSaved }: Props) {
     if (value === "") {
       setLines((current) =>
         current.map((line) =>
-          line.product.id === id ? { ...line, quantity: 0.01 } : line,
+          line.product.id === id ? { ...line, quantity: 0 } : line,
         ),
       );
       return;
@@ -247,7 +247,7 @@ export default function InvoiceForm({ mode, initialInvoice, onSaved }: Props) {
     setLines((current) =>
       current.map((line) =>
         line.product.id === id
-          ? { ...line, quantity: clampQuantity(quantity) }
+          ? { ...line, quantity: Math.max(0, quantity) }
           : line,
       ),
     );
@@ -567,7 +567,7 @@ export default function InvoiceForm({ mode, initialInvoice, onSaved }: Props) {
                         <input
                           type="number"
                           inputMode="decimal"
-                          min="0.01"
+                          min="0"
                           step="0.01"
                           value={line.quantity}
                           className="input w-24 text-center font-black"
