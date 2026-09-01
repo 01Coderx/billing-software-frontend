@@ -17,7 +17,8 @@ export default function InvoicesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [deletingId, setDeletingId] = useState<number | null>(null);
-
+  const [dateFilter, setDateFilter] = useState("");
+  
   async function load() {
     setLoading(true);
     setError("");
@@ -34,16 +35,24 @@ export default function InvoicesPage() {
     load();
   }, []);
 
-  const filtered = useMemo(
-    () =>
-      invoices.filter((invoice) =>
-        `${invoice.invoiceNumber} ${invoice.customer?.name || ""} ${invoice.status}`
-          .toLowerCase()
-          .includes(search.toLowerCase()),
-      ),
-    [invoices, search],
-  );
+  const filtered = useMemo(() => {
+  return bills.filter((bill) => {
+    // Existing search match logic
+    const matchesSearch = searchQuery 
+      ? (bill.customer?.name || "").toLowerCase().includes(searchQuery.toLowerCase()) || 
+        (bill.status || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (bill.invoiceNumber || "").toLowerCase().includes(searchQuery.toLowerCase())
+      : true;
 
+    // New date filtering logic (adjust property name if your date field is named differently, e.g. dueDate or createdAt)
+    const billDateString = bill.createdAt || bill.dueDate || bill.date;
+    const matchesDate = dateFilter && billDateString
+      ? new Date(billDateString).toISOString().slice(0, 10) === dateFilter
+      : true;
+
+    return matchesSearch && matchesDate;
+  });
+}, [bills, searchQuery, dateFilter]);
   async function remove(id: number) {
     if (!window.confirm("Delete this bill permanently?")) return;
 
@@ -90,9 +99,9 @@ export default function InvoicesPage() {
             </Button>
           }
         />
-      ) : (
+) : (
         <section className="card overflow-hidden">
-          <div className="flex flex-col gap-3 border-b border-slate-100 p-5 sm:flex-row">
+          <div className="flex flex-col gap-3 border-b border-slate-100 p-5 sm:flex-row sm:items-center">
             <div className="relative flex-1">
               <Search
                 size={17}
@@ -105,6 +114,25 @@ export default function InvoicesPage() {
                 onChange={(e) => setSearch(e.target.value)}
               />
             </div>
+
+            {/* Add Date Filter Input Here */}
+            <input
+              type="date"
+              className="input w-full sm:w-[180px]"
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value)}
+              aria-label="Filter bills by date"
+            />
+
+            {dateFilter && (
+              <button
+                type="button"
+                onClick={() => setDateFilter("")}
+                className="text-sm font-bold text-slate-500 hover:text-slate-900"
+              >
+                Clear Date
+              </button>
+            )}
 
             <Button variant="secondary" onClick={load}>
               <RefreshCw size={16} />
