@@ -35,24 +35,24 @@ export default function InvoicesPage() {
     load();
   }, []);
 
-  const filtered = useMemo(() => {
-  return bills.filter((bill) => {
-    // Existing search match logic
-    const matchesSearch = searchQuery 
-      ? (bill.customer?.name || "").toLowerCase().includes(searchQuery.toLowerCase()) || 
-        (bill.status || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (bill.invoiceNumber || "").toLowerCase().includes(searchQuery.toLowerCase())
-      : true;
+ const filtered = useMemo(() => {
+    return invoices.filter((invoice: Invoice) => {
+      const matchesSearch = search 
+        ? (invoice.customer?.name || "").toLowerCase().includes(search.toLowerCase()) || 
+          (invoice.status || "").toLowerCase().includes(search.toLowerCase()) ||
+          (invoice.invoiceNumber || "").toLowerCase().includes(search.toLowerCase())
+        : true;
 
-    // New date filtering logic (adjust property name if your date field is named differently, e.g. dueDate or createdAt)
-    const billDateString = bill.createdAt || bill.dueDate || bill.date;
-    const matchesDate = dateFilter && billDateString
-      ? new Date(billDateString).toISOString().slice(0, 10) === dateFilter
-      : true;
+      const billDateString = invoice.createdAt || invoice.dueDate;
+      const matchesDate = dateFilter && billDateString
+        ? new Date(billDateString).toISOString().slice(0, 10) === dateFilter
+        : true;
 
-    return matchesSearch && matchesDate;
-  });
-}, [bills, searchQuery, dateFilter]);
+      return matchesSearch && matchesDate;
+    });
+  }, [invoices, search, dateFilter]);
+
+  
   async function remove(id: number) {
     if (!window.confirm("Delete this bill permanently?")) return;
 
