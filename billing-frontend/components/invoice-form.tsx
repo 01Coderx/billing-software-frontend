@@ -92,7 +92,7 @@ export default function InvoiceForm({ mode, initialInvoice, onSaved }: Props) {
   const [productOpen, setProductOpen] = useState(false);
 
   const [dueDate, setDueDate] = useState(toDateInput(initialInvoice?.dueDate));
-  const [status, setStatus] = useState(initialInvoice?.status || "PAID");
+  const [status, setStatus] = useState(initialInvoice?.status || "SENT");
   const [tax, setTax] = useState(Math.max(0, safeNumber(initialInvoice?.tax)));
   const [discount, setDiscount] = useState(
     Math.max(0, safeNumber(initialInvoice?.discount)),
