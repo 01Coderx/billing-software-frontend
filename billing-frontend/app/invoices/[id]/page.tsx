@@ -11,7 +11,51 @@ import { formatCurrency, formatDate, initials } from "@/lib/utils";
 
 export default function InvoiceDetail(){const params=useParams<{id:string}>();const id=Number(params.id);const [invoice,setInvoice]=useState<Invoice|null>(null);const [loading,setLoading]=useState(true);const [error,setError]=useState("");const [downloading,setDownloading]=useState(false);const [deleting,setDeleting]=useState(false);
   useEffect(()=>{if(!Number.isFinite(id))return;api.invoices.get(id).then(setInvoice).catch(e=>setError(e instanceof Error?e.message:"Could not load invoice")).finally(()=>setLoading(false))},[id]);
-  function printBill(){ if(!invoice)return; window.open(`/invoices/${invoice.id}/print`, "_blank", "noopener,noreferrer"); }
+async function printBill() {
+  if (!invoice) return;
+
+  try {
+    setError("");
+
+    // Get the same PDF that is used by "Download PDF"
+    const blob = await api.invoices.pdf(invoice.id);
+    const url = URL.createObjectURL(blob);
+
+    // Create an invisible iframe for printing the PDF
+    const iframe = document.createElement("iframe");
+
+    iframe.style.position = "fixed";
+    iframe.style.right = "0";
+    iframe.style.bottom = "0";
+    iframe.style.width = "0";
+    iframe.style.height = "0";
+    iframe.style.border = "0";
+
+    iframe.src = url;
+    document.body.appendChild(iframe);
+
+    iframe.onload = () => {
+      setTimeout(() => {
+        try {
+          iframe.contentWindow?.focus();
+          iframe.contentWindow?.print();
+        } finally {
+          // Give the print dialog time to start before cleaning up
+          setTimeout(() => {
+            document.body.removeChild(iframe);
+            URL.revokeObjectURL(url);
+          }, 1000);
+        }
+      }, 500);
+    };
+  } catch (e) {
+    setError(
+      e instanceof Error
+        ? e.message
+        : "Could not print invoice"
+    );
+  }
+}
   async function removeInvoice(){if(!invoice)return;if(!window.confirm("Delete this bill permanently?"))return;setDeleting(true);setError("");try{await api.invoices.remove(invoice.id);window.location.href="/invoices";}catch(e){setError(e instanceof Error?e.message:"Could not delete invoice")}finally{setDeleting(false);}}
   async function download(){if(!invoice)return;setDownloading(true);try{const blob=await api.invoices.pdf(invoice.id);const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=`invoice-${invoice.id}.pdf`;a.click();URL.revokeObjectURL(url)}catch(e){setError(e instanceof Error?e.message:"Could not download PDF")}finally{setDownloading(false)}}
   if(loading)return <div className="card p-8 text-sm text-slate-500">Loading invoice…</div>;
